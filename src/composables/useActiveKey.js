@@ -3,6 +3,14 @@ import { onValue, set } from 'firebase/database'
 import { getActiveKeyRef, getConnectedRef } from '../firebase'
 import { VALID_KEYS } from '../config/quadrants'
 
+function formatFirebaseError(error) {
+  const message = error?.message ?? ''
+  if (message.includes('permission_denied')) {
+    return 'Sin permiso en Firebase. Activa lectura/escritura en /activeKey (Realtime Database → Reglas).'
+  }
+  return message || 'Error de conexión con Firebase'
+}
+
 export function useActiveKey({ isSender = false } = {}) {
   const remoteActiveKey = ref(null)
   const localActiveKey = ref(null)
@@ -18,7 +26,7 @@ export function useActiveKey({ isSender = false } = {}) {
       await set(getActiveKeyRef(), key)
       connectionError.value = null
     } catch (error) {
-      connectionError.value = error.message ?? 'No se pudo enviar la señal'
+      connectionError.value = formatFirebaseError(error)
       localActiveKey.value = null
     }
   }
@@ -30,7 +38,7 @@ export function useActiveKey({ isSender = false } = {}) {
       await set(getActiveKeyRef(), null)
       connectionError.value = null
     } catch (error) {
-      connectionError.value = error.message ?? 'No se pudo limpiar la señal'
+      connectionError.value = formatFirebaseError(error)
     }
   }
 
@@ -46,7 +54,7 @@ export function useActiveKey({ isSender = false } = {}) {
         connectionError.value = null
       },
       (error) => {
-        connectionError.value = error.message ?? 'Error de conexión con Firebase'
+        connectionError.value = formatFirebaseError(error)
       },
     )
 

@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "activeKey": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
