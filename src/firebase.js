@@ -20,6 +20,21 @@ export const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 }
 
-const app = initializeApp(firebaseConfig)
-export const db = getDatabase(app)
-export const activeKeyRef = ref(db, 'activeKey')
+let app = null
+let db = null
+
+export function getDb() {
+  if (!db) {
+    app = initializeApp(firebaseConfig)
+    db = getDatabase(app, firebaseConfig.databaseURL)
+  }
+  return db
+}
+
+export function getActiveKeyRef() {
+  return ref(getDb(), 'activeKey')
+}
+
+export function getConnectedRef() {
+  return ref(getDb(), '.info/connected')
+}

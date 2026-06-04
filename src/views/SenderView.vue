@@ -1,15 +1,14 @@
 <script setup>
 import { computed, onMounted, onUnmounted } from 'vue'
+import ConnectionBar from '../components/ConnectionBar.vue'
 import { useActiveKey } from '../composables/useActiveKey'
 import { quadrants, VALID_KEYS, getQuadrant } from '../config/quadrants'
 
-const { activeKey, sendKey, clearKey } = useActiveKey({ isSender: true })
+defineEmits(['back'])
 
-const viewerUrl = computed(() => {
-  const url = new URL(window.location.href)
-  url.searchParams.delete('role')
-  return url.toString()
-})
+const { activeKey, isConnected, connectionError, sendKey, clearKey } = useActiveKey({ isSender: true })
+
+const appUrl = computed(() => window.location.origin + window.location.pathname)
 
 const activeQuadrant = computed(() => getQuadrant(activeKey.value))
 
@@ -46,8 +45,8 @@ function onPointerLeave(key) {
   if (activeKey.value === key) clearKey()
 }
 
-async function copyViewerLink() {
-  await navigator.clipboard.writeText(viewerUrl.value)
+async function copyAppLink() {
+  await navigator.clipboard.writeText(appUrl.value)
 }
 
 onMounted(() => {
@@ -63,6 +62,12 @@ onUnmounted(() => {
 
 <template>
   <div class="dashboard">
+    <ConnectionBar
+      :is-connected="isConnected"
+      :connection-error="connectionError"
+      @back="$emit('back')"
+    />
+
     <header class="header">
       <div>
         <h1>Panel de control</h1>
@@ -96,22 +101,23 @@ onUnmounted(() => {
 
     <footer class="footer">
       <div class="link-box">
-        <span class="link-label">Enlace del espectador</span>
-        <code class="link-url">{{ viewerUrl }}</code>
+        <span class="link-label">Enlace para el espectador</span>
+        <code class="link-url">{{ appUrl }}</code>
       </div>
-      <button type="button" class="copy-btn" @click="copyViewerLink">Copiar enlace</button>
-      <p class="help">Usa las teclas A, B, C o D (mantén pulsado para enviar)</p>
+      <button type="button" class="copy-btn" @click="copyAppLink">Copiar enlace</button>
+      <p class="help">Abre el enlace en otro dispositivo, elige "Espectador" y usa A/B/C/D aquí</p>
     </footer>
   </div>
 </template>
 
 <style scoped>
 .dashboard {
+  position: relative;
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 56px 24px 24px;
   gap: 24px;
   background: #121212;
   color: #f5f5f5;

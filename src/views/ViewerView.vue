@@ -1,9 +1,12 @@
 <script setup>
 import { computed, onMounted, onUnmounted } from 'vue'
+import ConnectionBar from '../components/ConnectionBar.vue'
 import { useActiveKey } from '../composables/useActiveKey'
 import { getQuadrant } from '../config/quadrants'
 
-const { activeKey } = useActiveKey({ isSender: false })
+defineEmits(['back'])
+
+const { activeKey, isConnected, connectionError } = useActiveKey({ isSender: false })
 
 const activeQuadrant = computed(() => getQuadrant(activeKey.value))
 
@@ -38,6 +41,12 @@ onUnmounted(() => {
 
 <template>
   <div class="viewer" :style="screenStyle">
+    <ConnectionBar
+      :is-connected="isConnected"
+      :connection-error="connectionError"
+      @back="$emit('back')"
+    />
+
     <div class="viewer-content">
       <span v-if="activeQuadrant" class="letter" :style="{ color: letterColor }">
         {{ activeQuadrant.key }}
@@ -51,6 +60,7 @@ onUnmounted(() => {
 
 <style scoped>
 .viewer {
+  position: relative;
   width: 100%;
   height: 100%;
   display: flex;

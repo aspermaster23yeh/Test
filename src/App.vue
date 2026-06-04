@@ -1,14 +1,22 @@
 <script setup>
-import { computed } from 'vue'
+import { ref } from 'vue'
+import RoleSelectView from './views/RoleSelectView.vue'
 import SenderView from './views/SenderView.vue'
 import ViewerView from './views/ViewerView.vue'
 
-const isSender = computed(
-  () => new URLSearchParams(window.location.search).get('role') === 'sender',
-)
+const role = ref(null)
+
+function selectRole(selected) {
+  role.value = selected
+}
+
+function goBack() {
+  role.value = null
+}
 </script>
 
 <template>
-  <SenderView v-if="isSender" />
-  <ViewerView v-else />
+  <RoleSelectView v-if="!role" @select="selectRole" />
+  <SenderView v-else-if="role === 'sender'" @back="goBack" />
+  <ViewerView v-else @back="goBack" />
 </template>
