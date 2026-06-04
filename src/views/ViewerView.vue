@@ -1,23 +1,16 @@
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import ConnectionBar from '../components/ConnectionBar.vue'
 import { useActiveKey } from '../composables/useActiveKey'
-import { getQuadrant } from '../config/quadrants'
+import { quadrants } from '../config/quadrants'
 
 defineEmits(['back'])
 
 const { activeKey, isConnected, connectionError } = useActiveKey({ isSender: false })
 
-const activeQuadrant = computed(() => getQuadrant(activeKey.value))
-
-const screenStyle = computed(() => ({
-  backgroundColor: activeQuadrant.value?.color ?? '#1a1a1a',
-}))
-
-const letterColor = computed(() => {
-  if (!activeQuadrant.value) return 'rgba(255, 255, 255, 0.35)'
-  return activeQuadrant.value.key === 'C' ? '#1a1a1a' : '#ffffff'
-})
+function isActive(key) {
+  return activeKey.value === key
+}
 
 function requestFullscreen() {
   document.documentElement.requestFullscreen?.().catch(() => {})
@@ -40,19 +33,24 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="viewer" :style="screenStyle">
+  <div class="viewer">
     <ConnectionBar
       :is-connected="isConnected"
       :connection-error="connectionError"
       @back="$emit('back')"
     />
 
-    <div class="viewer-content">
-      <span v-if="activeQuadrant" class="letter" :style="{ color: letterColor }">
-        {{ activeQuadrant.key }}
-      </span>
-      <span v-else class="waiting">Esperando señal…</span>
-    </div>
+    <main class="grid">
+      <div
+        v-for="item in quadrants"
+        :key="item.key"
+        class="quadrant"
+        :class="{ active: isActive(item.key), dimmed: activeKey && !isActive(item.key) }"
+        :style="{ backgroundColor: item.color }"
+      >
+        <span class="quadrant-letter">{{ item.key }}</span>
+      </div>
+    </main>
 
     <p class="hint">Pulsa F para pantalla completa</p>
   </div>
@@ -63,33 +61,54 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100%;
+  background: #4a4a4a;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 10px;
+  min-height: 0;
+}
+
+.quadrant {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease;
+  min-height: 0;
+  min-width: 0;
+  opacity: 0.92;
+  transform: scale(1);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.viewer-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
+.quadrant.dimmed {
+  opacity: 0.55;
 }
 
-.letter {
-  font-size: clamp(6rem, 40vw, 22rem);
-  font-weight: 800;
+.quadrant.active {
+  opacity: 1;
+  transform: scale(1.03);
+  z-index: 1;
+  box-shadow:
+    0 0 24px rgba(255, 255, 255, 0.75),
+    0 0 48px rgba(255, 255, 255, 0.35);
+}
+
+.quadrant-letter {
+  font-size: clamp(4rem, 18vw, 12rem);
+  font-weight: 700;
   line-height: 1;
+  color: #ffffff;
   user-select: none;
-  animation: fade-in 0.15s ease;
-}
-
-.waiting {
-  font-size: clamp(1.25rem, 4vw, 2rem);
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.35);
-  letter-spacing: 0.02em;
 }
 
 .hint {
@@ -101,14 +120,17 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
+@media (max-width: 768px) {
+  .viewer {
+    padding: 8px;
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
+
+  .grid {
+    gap: 8px;
+  }
+
+  .quadrant-letter {
+    font-size: clamp(3rem, 22vw, 6rem);
   }
 }
 </style>
