@@ -1,7 +1,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { onValue, set } from 'firebase/database'
 import { getActiveKeyRef, getConnectedRef } from '../firebase'
-import { VALID_KEYS } from '../config/quadrants'
+import { parseSignal, VALID_KEYS } from '../config/quadrants'
 
 function formatFirebaseError(error) {
   const message = error?.message ?? ''
@@ -12,29 +12,36 @@ function formatFirebaseError(error) {
 }
 
 export function useActiveKey({ isSender = false } = {}) {
-  const remoteActiveKey = ref(null)
-  const localActiveKey = ref(null)
+  const remoteActiveSignal = ref(null)
+  const localActiveSignal = ref(null)
   const isConnected = ref(false)
   const connectionError = ref(null)
 
-  const activeKey = computed(() => (isSender ? localActiveKey.value : remoteActiveKey.value))
+  const activeSignal = computed(() => (isSender ? localActiveSignal.value : remoteActiveSignal.value))
 
-  async function sendKey(key) {
+  async function sendSignal(key, number) {
     if (!isSender || !VALID_KEYS.has(key)) return
+
+    const parsedNumber = Number(number)
+    const signal = {
+      number: Number.isFinite(parsedNumber) && parsedNumber > 0 ? Math.floor(parsedNumber) : 1,
+      key,
+    }
+
     try {
-      localActiveKey.value = key
-      await set(getActiveKeyRef(), key)
+      localActiveSignal.value = signal
+      await set(getActiveKeyRef(), signal)
       connectionError.value = null
     } catch (error) {
       connectionError.value = formatFirebaseError(error)
-      localActiveKey.value = null
+      localActiveSignal.value = null
     }
   }
 
-  async function clearKey() {
+  async function clearSignal() {
     if (!isSender) return
     try {
-      localActiveKey.value = null
+      localActiveSignal.value = null
       await set(getActiveKeyRef(), null)
       connectionError.value = null
     } catch (error) {
@@ -49,8 +56,7 @@ export function useActiveKey({ isSender = false } = {}) {
     unsubscribeKey = onValue(
       getActiveKeyRef(),
       (snapshot) => {
-        const value = snapshot.val()
-        remoteActiveKey.value = VALID_KEYS.has(value) ? value : null
+        remoteActiveSignal.value = parseSignal(snapshot.val())
         connectionError.value = null
       },
       (error) => {
@@ -69,12 +75,12 @@ export function useActiveKey({ isSender = false } = {}) {
   })
 
   return {
-    activeKey,
-    localActiveKey,
-    remoteActiveKey,
+    activeSignal,
+    localActiveSignal,
+    remoteActiveSignal,
     isConnected,
     connectionError,
-    sendKey,
-    clearKey,
+    sendSignal,
+    clearSignal,
   }
 }

@@ -1,19 +1,31 @@
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import ConnectionBar from '../components/ConnectionBar.vue'
 import { useActiveKey } from '../composables/useActiveKey'
-import { quadrants, VALID_KEYS, getQuadrant } from '../config/quadrants'
+import { quadrants, VALID_KEYS, getQuadrant, formatSignalLabel } from '../config/quadrants'
 
 defineEmits(['back'])
 
-const { activeKey, isConnected, connectionError, sendKey, clearKey } = useActiveKey({ isSender: true })
+const { activeSignal, isConnected, connectionError, sendSignal, clearSignal } = useActiveKey({
+  isSender: true,
+})
+
+const labelNumber = ref(1)
 
 const appUrl = computed(() => window.location.origin + window.location.pathname)
 
-const activeQuadrant = computed(() => getQuadrant(activeKey.value))
+const activeQuadrant = computed(() => getQuadrant(activeSignal.value?.key ?? null))
+
+const activeLabel = computed(() => formatSignalLabel(activeSignal.value))
+
+function buttonLabel(key) {
+  const number = Number(labelNumber.value)
+  const safeNumber = Number.isFinite(number) && number > 0 ? Math.floor(number) : 1
+  return `${safeNumber}.${key}`
+}
 
 function isActive(key) {
-  return activeKey.value === key
+  return activeSignal.value?.key === key
 }
 
 function onKeyDown(event) {
@@ -21,28 +33,28 @@ function onKeyDown(event) {
   const key = event.key.toUpperCase()
   if (VALID_KEYS.has(key)) {
     event.preventDefault()
-    sendKey(key)
+    sendSignal(key, labelNumber.value)
   }
 }
 
 function onKeyUp(event) {
   const key = event.key.toUpperCase()
-  if (VALID_KEYS.has(key) && activeKey.value === key) {
+  if (VALID_KEYS.has(key) && activeSignal.value?.key === key) {
     event.preventDefault()
-    clearKey()
+    clearSignal()
   }
 }
 
 function onPointerDown(key) {
-  sendKey(key)
+  sendSignal(key, labelNumber.value)
 }
 
 function onPointerUp(key) {
-  if (activeKey.value === key) clearKey()
+  if (activeSignal.value?.key === key) clearSignal()
 }
 
 function onPointerLeave(key) {
-  if (activeKey.value === key) clearKey()
+  if (activeSignal.value?.key === key) clearSignal()
 }
 
 async function copyAppLink() {
@@ -71,13 +83,27 @@ onUnmounted(() => {
     <header class="header">
       <div>
         <h1>Panel de control</h1>
-        <p class="subtitle">Envía la letra y el color al espectador</p>
+        <p class="subtitle">Envía número + letra al espectador</p>
       </div>
       <div v-if="activeQuadrant" class="status-pill" :style="{ backgroundColor: activeQuadrant.color }">
-        Enviando: {{ activeQuadrant.key }}
+        Enviando: {{ activeLabel }}
       </div>
       <div v-else class="status-pill idle">Sin señal activa</div>
     </header>
+
+    <section class="label-field">
+      <label class="label-title" for="label-number">Número del label</label>
+      <input
+        id="label-number"
+        v-model.number="labelNumber"
+        type="number"
+        min="1"
+        step="1"
+        class="label-input"
+        placeholder="1"
+      />
+      <p class="label-preview">Vista previa: {{ buttonLabel('A') }}, {{ buttonLabel('B') }}, …</p>
+    </section>
 
     <main class="controls">
       <button
@@ -87,14 +113,14 @@ onUnmounted(() => {
         class="control-btn"
         :class="{ active: isActive(item.key) }"
         :style="{ '--btn-color': item.color }"
-        :aria-label="`Enviar cuadrante ${item.key}`"
+        :aria-label="`Enviar ${buttonLabel(item.key)}`"
         :aria-pressed="isActive(item.key)"
         @pointerdown.prevent="onPointerDown(item.key)"
         @pointerup.prevent="onPointerUp(item.key)"
         @pointerleave="onPointerLeave(item.key)"
         @pointercancel="onPointerLeave(item.key)"
       >
-        <span class="control-letter">{{ item.key }}</span>
+        <span class="control-label">{{ buttonLabel(item.key) }}</span>
         <span class="control-color">{{ item.color }}</span>
       </button>
     </main>
@@ -105,7 +131,7 @@ onUnmounted(() => {
         <code class="link-url">{{ appUrl }}</code>
       </div>
       <button type="button" class="copy-btn" @click="copyAppLink">Copiar enlace</button>
-      <p class="help">Abre el enlace en otro dispositivo, elige "Espectador" y usa A/B/C/D aquí</p>
+      <p class="help">Escribe el número, pulsa A/B/C/D y el espectador verá pantalla completa del color</p>
     </footer>
   </div>
 </template>
@@ -118,7 +144,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   padding: 56px 24px 24px;
-  gap: 24px;
+  gap: 20px;
   background: #121212;
   color: #f5f5f5;
   overflow: auto;
@@ -156,6 +182,45 @@ h1 {
   color: rgba(255, 255, 255, 0.5);
 }
 
+.label-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.label-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.label-input {
+  width: 120px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: #1e1e1e;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.label-input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.label-preview {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
 .controls {
   flex: 1;
   display: grid;
@@ -170,7 +235,7 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 140px;
+  min-height: 120px;
   border: 2px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
   background: color-mix(in srgb, var(--btn-color) 18%, #1e1e1e);
@@ -193,10 +258,11 @@ h1 {
   background: color-mix(in srgb, var(--btn-color) 35%, #1e1e1e);
 }
 
-.control-letter {
-  font-size: clamp(2.5rem, 10vw, 4rem);
+.control-label {
+  font-size: clamp(1.75rem, 8vw, 3rem);
   font-weight: 800;
   color: var(--btn-color);
+  font-variant-numeric: tabular-nums;
 }
 
 .control-color {
@@ -255,7 +321,7 @@ h1 {
 
 @media (max-width: 640px) {
   .dashboard {
-    padding: 16px;
+    padding: 56px 16px 16px;
     gap: 16px;
   }
 
@@ -264,7 +330,7 @@ h1 {
   }
 
   .control-btn {
-    min-height: 100px;
+    min-height: 96px;
   }
 }
 </style>
