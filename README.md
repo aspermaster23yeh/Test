@@ -67,17 +67,30 @@ npm install
 
 ## Configuración de Firebase
 
-Edita `src/firebase.js` con las credenciales de tu proyecto Firebase:
+Las credenciales **no van en el código**. Usa variables de entorno:
 
-```js
-export const firebaseConfig = {
-  apiKey: '...',
-  authDomain: '...',
-  databaseURL: '...',
-  projectId: '...',
-  // ...
-}
+```bash
+cp .env.example .env
 ```
+
+Completa `.env` con los valores de Firebase Console → Configuración del proyecto → Tus apps:
+
+```env
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_DATABASE_URL=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_FIREBASE_MEASUREMENT_ID=
+```
+
+> **Nunca subas `.env` a Git.** El archivo ya está en `.gitignore`.
+
+### Vercel
+
+En el dashboard de Vercel → Settings → Environment Variables, añade las mismas variables `VITE_*` para Production, Preview y Development.
 
 En Firebase Console, configura las reglas de Realtime Database según tu entorno. Para desarrollo puedes usar:
 

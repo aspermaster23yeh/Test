@@ -1,15 +1,23 @@
 import { initializeApp } from 'firebase/app'
 import { getDatabase, ref } from 'firebase/database'
 
+function requiredEnv(name) {
+  const value = import.meta.env[name]
+  if (!value) {
+    throw new Error(`Falta la variable de entorno ${name}. Copia .env.example a .env y complétala.`)
+  }
+  return value
+}
+
 export const firebaseConfig = {
-  apiKey: 'AIzaSyAAlGwdCWibgfY7ddSvRT4PXOXaqcyV9V0',
-  authDomain: 'yare-968de.firebaseapp.com',
-  databaseURL: 'https://yare-968de-default-rtdb.firebaseio.com',
-  projectId: 'yare-968de',
-  storageBucket: 'yare-968de.firebasestorage.app',
-  messagingSenderId: '798186235220',
-  appId: '1:798186235220:web:2b736728dccf7fd4d0d4c1',
-  measurementId: 'G-LTVX7HFV87',
+  apiKey: requiredEnv('VITE_FIREBASE_API_KEY'),
+  authDomain: requiredEnv('VITE_FIREBASE_AUTH_DOMAIN'),
+  databaseURL: requiredEnv('VITE_FIREBASE_DATABASE_URL'),
+  projectId: requiredEnv('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: requiredEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: requiredEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: requiredEnv('VITE_FIREBASE_APP_ID'),
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 }
 
 const app = initializeApp(firebaseConfig)
