@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted } from 'vue'
 import ConnectionBar from '../components/ConnectionBar.vue'
 import { useActiveKey } from '../composables/useActiveKey'
-import { getQuadrant, formatSignalLabel } from '../config/quadrants'
+import { getQuadrant } from '../config/quadrants'
 
 defineEmits(['back'])
 
@@ -10,11 +10,7 @@ const { activeSignal, isConnected, connectionError } = useActiveKey({ isSender: 
 
 const activeQuadrant = computed(() => getQuadrant(activeSignal.value?.key ?? null))
 
-const screenStyle = computed(() => ({
-  backgroundColor: activeQuadrant.value?.color ?? '#1a1a1a',
-}))
-
-const displayLabel = computed(() => formatSignalLabel(activeSignal.value))
+const labelColor = computed(() => activeQuadrant.value?.color ?? '#ffffff')
 
 function requestFullscreen() {
   document.documentElement.requestFullscreen?.().catch(() => {})
@@ -37,7 +33,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="viewer" :style="screenStyle">
+  <div class="viewer">
     <ConnectionBar
       :is-connected="isConnected"
       :connection-error="connectionError"
@@ -45,7 +41,11 @@ onUnmounted(() => {
     />
 
     <div class="viewer-content">
-      <span v-if="activeSignal" class="label">{{ displayLabel }}</span>
+      <p v-if="activeSignal" class="label" :style="{ color: labelColor }">
+        <span class="number">{{ activeSignal.number }}</span
+        ><span class="dot">.</span
+        ><span class="letter">{{ activeSignal.key }}</span>
+      </p>
       <span v-else class="waiting">Esperando señal…</span>
     </div>
 
@@ -61,7 +61,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease;
+  background: #000000;
 }
 
 .viewer-content {
@@ -76,7 +76,6 @@ onUnmounted(() => {
   font-size: clamp(4rem, 28vw, 16rem);
   font-weight: 800;
   line-height: 1;
-  color: #ffffff;
   user-select: none;
   font-variant-numeric: tabular-nums;
   animation: fade-in 0.15s ease;
@@ -94,7 +93,7 @@ onUnmounted(() => {
   bottom: 16px;
   right: 16px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.2);
   pointer-events: none;
 }
 
